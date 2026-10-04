@@ -23,7 +23,55 @@ const app = {
   stateLog: [],
   busy: false,
   report: null,
+  ended: false,
 };
+
+// Interview clock. It runs only while it's the student's turn and pauses while
+// the model is generating, so slow providers don't eat into anyone's time.
+const clock = {
+  limitMs: 0,
+  usedMs: 0,
+  since: null,
+  timer: null,
+  start(minutes) {
+    this.stop();
+    this.limitMs = minutes > 0 ? minutes * 60000 : 0;
+    this.usedMs = 0;
+    this.since = Date.now();
+    if (this.limitMs) this.timer = setInterval(tick, 250);
+  },
+  pause() {
+    if (this.since != null) this.usedMs += Date.now() - this.since;
+    this.since = null;
+  },
+  resume() {
+    if (this.since == null) this.since = Date.now();
+  },
+  stop() {
+    this.pause();
+    clearInterval(this.timer);
+    this.timer = null;
+  },
+  used() {
+    const ms = this.usedMs + (this.since != null ? Date.now() - this.since : 0);
+    return this.limitMs ? Math.min(ms, this.limitMs) : ms;
+  },
+  remaining() {
+    return this.limitMs ? Math.max(0, this.limitMs - this.used()) : Infinity;
+  },
+};
+
+const fmt = (ms) => {
+  const t = Math.ceil(ms / 1000);
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+};
+
+function tick() {
+  const left = clock.remaining();
+  $("time-left").textContent = fmt(left);
+  $("time-meter").classList.toggle("low", left <= 120000);
+  if (left <= 0 && !app.busy) endInterview("time");
+}
 
 // ---------- setup view ----------
 
@@ -86,6 +134,7 @@ function selectScenario(s, btn) {
   $("brief-text").textContent = s.briefing.trim();
   $("brief-goal").textContent = s.goal;
   $("brief-turns").textContent = s.turns;
+  $("brief-time").textContent = s.minutes > 0 ? ` and ${s.minutes} minutes` : "";
   $("briefing-card").hidden = false;
   const hint = s.model_hint?.[$("provider").value];
   if (hint) $("model").value = hint;
@@ -123,7 +172,12 @@ function startInterview() {
     state: { trust: Number(s.initial_trust ?? 1), revealed: [] },
     stateLog: [],
     report: null,
+    ended: false,
   });
+  $("end-btn").textContent = "End interview & get report";
+  $("end-btn").classList.replace("primary", "ghost");
+  $("time-meter").hidden = !(s.minutes > 0);
+  $("time-left").textContent = s.minutes > 0 ? fmt(s.minutes * 60000) : "";
   $("iv-category").textContent = s.category;
   $("iv-title").textContent = s.title;
   $("iv-brief").textContent = s.briefing.trim();
@@ -135,7 +189,23 @@ function startInterview() {
   updateMeters();
   setInputEnabled(true);
   show("interview");
+  clock.start(s.minutes);
   $("question").focus();
+}
+
+function endInterview(reason) {
+  if (app.ended) return;
+  app.ended = true;
+  clock.stop();
+  setInputEnabled(false);
+  addBubble(
+    "system",
+    reason === "time"
+      ? "Time's up. The source has to go, and the interview is over."
+      : "That was your last question. The interview is over.",
+  );
+  $("end-btn").textContent = "Get my report";
+  $("end-btn").classList.replace("ghost", "primary");
 }
 
 function addBubble(who, text) {
@@ -170,7 +240,7 @@ function setInputEnabled(on) {
 
 async function ask(e) {
   e?.preventDefault();
-  if (app.busy) return;
+  if (app.busy || app.ended) return;
   const q = $("question").value.trim();
   if (!q) return;
   const s = app.scenario;
@@ -178,6 +248,7 @@ async function ask(e) {
   if (turn > s.turns) return;
 
   app.busy = true;
+  clock.pause();
   setInputEnabled(false);
   $("iv-error").hidden = true;
   $("question").value = "";
@@ -189,7 +260,7 @@ async function ask(e) {
   try {
     const raw = await chat({
       ...settings(),
-      system: personaPrompt(s, turn, app.state),
+      system: personaPrompt(s, turn, app.state, clock.remaining() / 60000),
       messages,
       maxTokens: 600,
     });
@@ -213,11 +284,11 @@ async function ask(e) {
   }
 
   if (app.transcript.length >= s.turns) {
-    setInputEnabled(false);
-    addBubble("system", "That was your last question. The interview is over.");
-    $("end-btn").textContent = "Get my report";
-    $("end-btn").classList.replace("ghost", "primary");
+    endInterview("questions");
+  } else if (clock.remaining() <= 0) {
+    endInterview("time");
   } else {
+    clock.resume();
     setInputEnabled(true);
     $("question").focus();
   }
@@ -227,6 +298,8 @@ async function ask(e) {
 
 async function evaluate() {
   const s = app.scenario;
+  clock.stop();
+  app.ended = true;
   show("report");
   $("report").hidden = true;
   $("report-actions").hidden = true;
@@ -235,7 +308,8 @@ async function evaluate() {
   $("report-status").hidden = false;
   $("report-status").textContent = "Your editor is reviewing the interview…";
 
-  const userPrompt = evaluatorPrompt(s, app.transcript, app.stateLog);
+  const timing = { minutes: s.minutes, used: fmt(clock.used()) };
+  const userPrompt = evaluatorPrompt(s, app.transcript, app.stateLog, timing);
   let ev = null;
   let lastErr;
   for (let attempt = 0; attempt < 2 && !ev; attempt++) {
@@ -267,6 +341,7 @@ async function evaluate() {
     student: $("student-name").value.trim(),
     providerLabel: PROVIDERS[$("provider").value].label,
     model: $("model").value.trim(),
+    timeUsed: s.minutes > 0 ? `${timing.used} of ${s.minutes}:00` : "",
   };
   app.report = { markdown: renderReportMarkdown(ev, s, app.transcript, meta) };
   $("report").innerHTML = renderReportHTML(ev, s, app.transcript, meta);
@@ -311,8 +386,7 @@ async function copy() {
 
 function resetToSetup() {
   if (app.transcript.length && !app.report && !confirm("Leave this interview? Your progress will be lost.")) return;
-  $("end-btn").textContent = "End interview & get report";
-  $("end-btn").classList.replace("primary", "ghost");
+  clock.stop();
   show("setup");
 }
 
@@ -336,7 +410,7 @@ async function init() {
     if (app.busy) return;
     if (!app.transcript.length) return resetToSetup();
     const left = app.scenario.turns - app.transcript.length;
-    if (left > 0 && !confirm(`You still have ${left} question(s). End the interview now?`)) return;
+    if (!app.ended && left > 0 && !confirm(`You still have ${left} question(s). End the interview now?`)) return;
     evaluate();
   });
   $("dl-btn").addEventListener("click", download);

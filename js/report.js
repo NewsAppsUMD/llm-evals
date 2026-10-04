@@ -27,7 +27,7 @@ export function renderReportHTML(ev, s, transcript, meta) {
     <div>
       <p class="eyebrow">Progress report · ${esc(meta.date)}</p>
       <h2>${esc(s.title)}</h2>
-      <p class="muted">${esc(meta.providerLabel)} · ${esc(meta.model)} · ${transcript.length} of ${s.turns} questions used</p>
+      <p class="muted">${esc(meta.providerLabel)} · ${esc(meta.model)} · ${transcript.length} of ${s.turns} questions used${meta.timeUsed ? ` · ${esc(meta.timeUsed)} min` : ""}</p>
     </div>
     <div class="score" aria-label="Overall score">
       <span class="score-num">${overallPercent(ev)}%</span>
@@ -116,6 +116,7 @@ export function renderReportMarkdown(ev, s, transcript, meta) {
   if (meta.student) out.push(`- Student: ${meta.student}`);
   out.push(`- Model: ${meta.providerLabel} / ${meta.model}`);
   out.push(`- Questions used: ${transcript.length} of ${s.turns}`);
+  if (meta.timeUsed) out.push(`- Time used: ${meta.timeUsed} min`);
   out.push(`- **Overall score: ${overallPercent(ev)}%**`, "");
   out.push(ev.summary || "", "");
 

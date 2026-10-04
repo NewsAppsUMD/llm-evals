@@ -47,7 +47,7 @@
         <h3 id="brief-title"></h3>
         <p id="brief-text" class="pre"></p>
         <p><strong>Your goal:</strong> <span id="brief-goal"></span></p>
-        <p class="muted">You have <strong id="brief-turns"></strong> questions. Each message you send counts as one. Plan your approach before you start.</p>
+        <p class="muted">You have <strong id="brief-turns"></strong> questions<strong id="brief-time"></strong>. Each message you send counts as one question. The clock runs while it's your turn and pauses while the source answers. Plan your approach before you start.</p>
         <label>Your name (optional, appears on the report)
           <input id="student-name" autocomplete="name">
         </label>
@@ -63,6 +63,7 @@
           <h2 id="iv-title"></h2>
         </div>
         <div class="meters">
+          <div class="meter" id="time-meter"><span class="meter-label">Time left</span><span id="time-left" class="meter-val" role="timer"></span></div>
           <div class="meter"><span class="meter-label">Questions left</span><span id="turns-left" class="meter-val"></span></div>
           <div class="meter"><span class="meter-label">Facts uncovered</span><span id="facts-found" class="meter-val"></span></div>
           <div class="meter" id="trust-meter"><span class="meter-label">Source openness</span><span id="trust-dots" class="dots" aria-live="polite"></span></div>

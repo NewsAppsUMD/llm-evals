@@ -26,7 +26,9 @@ On Windows use `python server.py`. Your browser opens at `http://localhost:8000`
 In this mode, every finished report is also saved to the `sessions/` folder.
 
 ### How an interview works
-- Each message you send counts as one question. When you run out, the interview ends.
+- Each message you send counts as one question, and each scenario has a time limit.
+  The clock runs only while it's your turn and pauses while the source answers. When
+  you run out of questions or time, the interview ends.
 - The source opens up or shuts down depending on **how** you ask. Specific questions,
   respect, and good follow-ups work. Accusations, leading questions, and pressure don't.
 - "Facts uncovered" shows how many key pieces of information you've obtained so far,
@@ -55,7 +57,10 @@ file to reorder them. To remove a scenario, delete its source file and rebuild.
 **Back up `scenarios-src/`.** It is the only readable copy, and git doesn't track it.
 Keep it in a private repo or a cloud drive.
 
-- **Shown to students:** `title`, `category`, `turns`, `briefing`, `goal`, `opening`.
+- **Shown to students:** `title`, `category`, `turns`, `minutes`, `briefing`, `goal`, `opening`.
+- **Time limit:** `minutes` sets the clock. If you leave it out, it defaults to 1.5 minutes
+  per question; `minutes: 0` turns the clock off. The source starts wrapping up with two
+  minutes or two questions left.
 - **Hidden:** `facts` (each with an `unlock` condition), `openers`, `shutters`, the
   `## Persona`, `## Behavior notes`, and `## Evaluator notes` sections. These go into the
   prompts and appear only in the final report.
@@ -74,8 +79,8 @@ tactic, or evidence:
 unlock: "Trust is at least 4 AND the reporter negotiates background attribution."
 ```
 
-- **Harder:** use fewer `turns`, a lower `initial_trust`, stricter unlocks, and `show_trust: false`.
-- **Easier:** use more turns and unlocks that depend only on asking about the right topic.
+- **Harder:** use fewer `turns`, fewer `minutes`, a lower `initial_trust`, stricter unlocks, and `show_trust: false`.
+- **Easier:** use more turns and time, and unlocks that depend only on asking about the right topic.
 - Put the most important fact last and make it require both trust and a tactic. That
   makes students build toward it.
 

@@ -16,12 +16,12 @@ function sectionText(sections) {
 }
 
 /** System prompt for the source, rebuilt every turn with the current turn number. */
-export function personaPrompt(s, turn, state) {
+export function personaPrompt(s, turn, state, minutesLeft = Infinity) {
   const remaining = s.turns - turn;
   let pacing;
   if (remaining === 0) {
     pacing = "This is the reporter's FINAL question. Answer it, then end the conversation naturally (you have to leave, hang up, etc.).";
-  } else if (remaining <= 2) {
+  } else if (remaining <= 2 || minutesLeft <= 2) {
     pacing = "You are almost out of time. Let the reporter know you need to wrap up soon.";
   } else {
     pacing = "You have some time, but you are not going to talk forever.";
@@ -49,7 +49,7 @@ Tactics that make you close up: ${s.shutters.join("; ") || "rudeness, pressure, 
 3. Already revealed: ${state.revealed.length ? state.revealed.join(", ") : "none"}. You may repeat or elaborate on these.
 4. Do not invent major new facts beyond the scenario. Small realistic details (your coffee, the weather, your job) are fine.
 5. Stay in character at all times. Never mention trust levels, facts, IDs, rules, or that this is an exercise. Speak naturally and conversationally, usually 1–4 sentences, as a real person would aloud. No stage directions longer than a few words in *italics*.
-6. Pacing: this is question ${turn} of ${s.turns}. ${pacing}
+6. Pacing: this is question ${turn} of ${s.turns}${Number.isFinite(minutesLeft) ? `, with about ${Math.max(1, Math.round(minutesLeft))} minute(s) left before you have to go` : ""}. ${pacing}
 
 # Required hidden status line
 After your in-character reply, on its own final line, write exactly:
@@ -79,7 +79,7 @@ export function parseReply(raw, prev) {
 
 export const EVALUATOR_SYSTEM = `You are an experienced journalism instructor evaluating a student's practice interview. The source was played by an AI following hidden instructions. Be specific, fair, and constructive: quote the student's actual questions, and give concrete better alternatives. Judge the student's technique, not the AI's performance. Respond with a single JSON object and nothing else.`;
 
-export function evaluatorPrompt(s, transcript, stateLog) {
+export function evaluatorPrompt(s, transcript, stateLog, timing = {}) {
   const lines = transcript
     .map((t, i) => `Q${i + 1} REPORTER: ${t.question}\nA${i + 1} SOURCE: ${t.answer}`)
     .join("\n\n");
@@ -91,7 +91,8 @@ export function evaluatorPrompt(s, transcript, stateLog) {
   return `# Scenario: ${s.title}${s.category ? ` (${s.category})` : ""}
 Student's briefing: ${s.briefing.trim()}
 Student's goal: ${s.goal}
-Questions allowed: ${s.turns}; questions used: ${transcript.length}
+Questions allowed: ${s.turns}; questions used: ${transcript.length}${timing.minutes > 0 ? `
+Time allowed: ${timing.minutes} minutes; time used: ${timing.used} (the clock ran only while the student was composing questions). Consider whether the student used the time well: prioritizing the most important questions, not wasting it on small talk or long setups, and not ending the interview early without reason.` : ""}
 
 # Hidden facts the student was trying to obtain
 ${factLines(s.facts)}

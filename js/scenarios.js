@@ -61,6 +61,7 @@ export function parseScenario(text, filename = "") {
     ],
     ...meta,
     turns: Number(meta.turns),
+    minutes: meta.minutes === undefined ? Math.ceil(Number(meta.turns) * 1.5) : Number(meta.minutes) || 0,
     sections,
     file: filename,
   };
