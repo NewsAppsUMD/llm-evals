@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview Practice</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="site-head">
+    <h1>Interview Practice</h1>
+    <span id="mode-badge" class="mode-badge" hidden></span>
+  </header>
+
+  <main>
+    <!-- SETUP -->
+    <section id="view-setup" class="view">
+      <div class="card">
+        <h2>1. Connect a model</h2>
+        <div class="grid">
+          <label>Provider
+            <select id="provider"></select>
+          </label>
+          <label>Model
+            <input id="model" list="model-list" autocomplete="off" spellcheck="false">
+            <datalist id="model-list"></datalist>
+          </label>
+          <label class="span-2">API key
+            <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key">
+          </label>
+          <label class="check span-2"><input id="remember-key" type="checkbox"> Remember key on this device</label>
+        </div>
+        <p id="provider-note" class="note" hidden></p>
+      </div>
+
+      <div class="card">
+        <h2>2. Choose a scenario</h2>
+        <div id="scenario-errors" class="error" hidden></div>
+        <div id="scenario-list" class="scenario-list" role="radiogroup"></div>
+      </div>
+
+      <div class="card" id="briefing-card" hidden>
+        <h2>3. Your assignment</h2>
+        <p class="eyebrow" id="brief-category"></p>
+        <h3 id="brief-title"></h3>
+        <p id="brief-text" class="pre"></p>
+        <p><strong>Your goal:</strong> <span id="brief-goal"></span></p>
+        <p class="muted">You have <strong id="brief-turns"></strong> questions. Each message you send counts as one. Plan your approach before you start.</p>
+        <label>Your name (optional, appears on the report)
+          <input id="student-name" autocomplete="name">
+        </label>
+        <button id="start-btn" class="primary">Start interview</button>
+      </div>
+    </section>
+
+    <!-- INTERVIEW -->
+    <section id="view-interview" class="view" hidden>
+      <div class="interview-bar">
+        <div>
+          <p class="eyebrow" id="iv-category"></p>
+          <h2 id="iv-title"></h2>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="meter-label">Questions left</span><span id="turns-left" class="meter-val"></span></div>
+          <div class="meter"><span class="meter-label">Facts uncovered</span><span id="facts-found" class="meter-val"></span></div>
+          <div class="meter" id="trust-meter"><span class="meter-label">Source openness</span><span id="trust-dots" class="dots" aria-live="polite"></span></div>
+        </div>
+      </div>
+      <details class="brief-reminder"><summary>Assignment</summary><p id="iv-brief" class="pre"></p><p><strong>Goal:</strong> <span id="iv-goal"></span></p></details>
+
+      <div id="transcript" class="transcript" aria-live="polite"></div>
+      <div id="iv-error" class="error" hidden></div>
+
+      <form id="ask-form" class="ask">
+        <textarea id="question" rows="3" placeholder="Ask your question… (Enter to send, Shift+Enter for a new line)"></textarea>
+        <div class="ask-actions">
+          <button type="button" id="end-btn" class="ghost">End interview &amp; get report</button>
+          <button type="submit" id="send-btn" class="primary">Ask</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- REPORT -->
+    <section id="view-report" class="view" hidden>
+      <div id="report-status" class="card status"></div>
+      <div id="report-error" class="error" hidden></div>
+      <article id="report" class="card report" hidden></article>
+      <div id="report-actions" class="report-actions" hidden>
+        <button id="dl-btn" class="primary">Download report (.md)</button>
+        <button id="copy-btn">Copy to clipboard</button>
+        <button id="print-btn">Print / save PDF</button>
+        <button id="retry-eval-btn" hidden>Retry evaluation</button>
+        <button id="again-btn" class="ghost">New interview</button>
+        <span id="save-note" class="muted"></span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
