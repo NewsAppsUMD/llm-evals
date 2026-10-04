@@ -221,3 +221,6 @@ __marimo__/
 
 # Interview practice session reports
 sessions/
+
+# Readable scenarios contain the answers; only encoded scenarios/*.dat are published
+scenarios-src/

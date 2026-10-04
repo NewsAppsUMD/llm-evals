@@ -1,4 +1,4 @@
-import { PROVIDERS, chat, detectLocalMode, isLocalMode, providerAvailable } from "./providers.js";
+import { PROVIDERS, chat, detectLocalMode, isLocalMode } from "./providers.js";
 import { loadScenarios } from "./scenarios.js";
 import { personaPrompt, parseReply, EVALUATOR_SYSTEM, evaluatorPrompt, extractJSON } from "./prompts.js";
 import { renderReportHTML, renderReportMarkdown } from "./report.js";
@@ -33,12 +33,11 @@ function populateProviders() {
   for (const [id, p] of Object.entries(PROVIDERS)) {
     const opt = document.createElement("option");
     opt.value = id;
-    opt.textContent = providerAvailable(id) ? p.label : `${p.label} (run locally)`;
-    opt.disabled = !providerAvailable(id);
+    opt.textContent = p.label;
     sel.append(opt);
   }
   const saved = store.get("provider");
-  sel.value = saved && providerAvailable(saved) ? saved : "anthropic";
+  sel.value = PROVIDERS[saved] ? saved : "anthropic";
   onProviderChange();
 }
 
@@ -55,14 +54,10 @@ function onProviderChange() {
   $("remember-key").checked = !!remembered;
 
   const note = $("provider-note");
-  if (!isLocalMode()) {
-    note.hidden = false;
-    note.textContent =
-      "Hosted mode: your browser calls the provider directly. Ollama Cloud requires running this site locally with `python server.py`.";
-  } else {
-    note.hidden = false;
-    note.textContent = "Local mode: requests go through server.py on your computer. Reports are also saved to the sessions/ folder.";
-  }
+  note.hidden = false;
+  note.textContent = isLocalMode()
+    ? "Local mode: requests go through server.py on your computer. Reports are also saved to the sessions/ folder."
+    : "Hosted mode: your browser calls the provider directly. Reports are not saved automatically, so download yours at the end.";
 }
 
 function renderScenarioList() {

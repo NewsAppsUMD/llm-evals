@@ -1,6 +1,18 @@
 // Loads scenarios listed in scenarios/index.json. Each scenario is a Markdown
 // file with YAML front matter (settings, hidden facts, rubric) and a body of
 // "## Heading" sections (persona, behavior notes) used only in the prompts.
+// Published scenarios are .dat files made by build_scenarios.py (gzip + XOR +
+// base64) so the answers aren't readable at a glance; plain .md also works.
+
+const KEY = new TextEncoder().encode("interview-practice"); // must match build_scenarios.py
+const MAGIC = "IPS1:";
+
+async function decode(text) {
+  const bytes = Uint8Array.from(atob(text.slice(MAGIC.length).trim()), (c) => c.charCodeAt(0));
+  for (let i = 0; i < bytes.length; i++) bytes[i] ^= KEY[i % KEY.length];
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).text();
+}
 
 const REQUIRED = ["id", "title", "turns", "briefing", "goal", "facts"];
 
@@ -62,7 +74,8 @@ export async function loadScenarios() {
     files.map(async (f) => {
       const r = await fetch(`scenarios/${f}`, { cache: "no-store" });
       if (!r.ok) throw new Error(`${f}: HTTP ${r.status}`);
-      return parseScenario(await r.text(), f);
+      const text = await r.text();
+      return parseScenario(text.startsWith(MAGIC) ? await decode(text) : text, f);
     }),
   );
   const scenarios = [];

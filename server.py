@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Local server for the interview practice site.
 
-Serves the static files and proxies LLM API calls so that every provider
-(including Ollama Cloud, which blocks direct browser calls) works.
+Serves the static files, proxies LLM API calls to Anthropic and OpenAI,
+and saves finished reports to sessions/.
 Standard library only:  python server.py [--port 8000] [--no-browser]
 """
 
@@ -24,7 +24,6 @@ SESSIONS = ROOT / "sessions"
 UPSTREAMS = {
     "anthropic": "https://api.anthropic.com/v1/messages",
     "openai": "https://api.openai.com/v1/chat/completions",
-    "ollama": "https://ollama.com/api/chat",
 }
 FORWARD_HEADERS = ("authorization", "x-api-key", "anthropic-version", "content-type")
 

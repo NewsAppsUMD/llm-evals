@@ -4,16 +4,16 @@ A browser-based simulator where journalism students interview an AI-played sourc
 (a reluctant official, a grieving parent, and so on) with a fixed number of questions,
 then get a progress report that evaluates their technique.
 
-Students bring their own API key for **Anthropic**, **OpenAI**, or **Ollama Cloud**.
+Students bring their own API key for **Anthropic** or **OpenAI**.
 
 ## For students
 
-### Option A: use the website (Anthropic or OpenAI)
+### Option A: use the website
 1. Open the course site (GitHub Pages link from your instructor).
 2. Choose a provider, paste your API key, and pick a scenario.
 3. Read the assignment, plan your approach, and start the interview.
 
-### Option B: run it on your computer (all providers, including Ollama Cloud)
+### Option B: run it on your computer
 You need Python 3.9 or newer. No other installs are required.
 
 ```bash
@@ -41,16 +41,29 @@ In this mode, every finished report is also saved to the `sessions/` folder.
 ## For instructors
 
 ### Writing scenarios
-Each scenario is one Markdown file in `scenarios/`. Start by copying
-`scenarios/_template.md`, then add the filename to `scenarios/index.json`.
+Readable scenarios live in `scenarios-src/`. Git ignores that folder because
+those files contain the answers. Students get only encoded copies.
+
+1. Copy `scenarios-src/_template.md` to a new file in `scenarios-src/` and fill it in.
+2. Run `python3 build_scenarios.py`. This writes the encoded `scenarios/*.dat` files
+   and `scenarios/index.json`.
+3. Commit the `.dat` files and `index.json`.
+
+`index.json` sets the order students see. New scenarios are added at the end; edit the
+file to reorder them. To remove a scenario, delete its source file and rebuild.
+
+**Back up `scenarios-src/`.** It is the only readable copy, and git doesn't track it.
+Keep it in a private repo or a cloud drive.
 
 - **Shown to students:** `title`, `category`, `turns`, `briefing`, `goal`, `opening`.
 - **Hidden:** `facts` (each with an `unlock` condition), `openers`, `shutters`, the
   `## Persona`, `## Behavior notes`, and `## Evaluator notes` sections. These go into the
   prompts and appear only in the final report.
 
-Hidden fields are in files the browser downloads, so a determined student can read them
-with developer tools. Treat this as a practice tool, not a secure exam.
+The encoding is obfuscation, not encryption. It stops a student from opening a file in a
+text editor or on GitHub. Anyone willing to dig through the page's code, or to watch the
+API requests in the browser's developer tools, can still read the hidden fields. Treat
+this as a practice tool, not a secure exam.
 
 ### Tuning difficulty
 The source keeps a private **trust level** from 0 to 5. Openers raise it and shutters
@@ -76,9 +89,9 @@ unlock: "Trust is at least 4 AND the reporter negotiates background attribution.
 - The report comes from a separate evaluator call. It gets the transcript, the hidden facts,
   the rubric, and the state log, and returns structured JSON.
 - `server.py` is a local server that uses only Python's standard library. It serves the
-  site and forwards API calls to a fixed list of provider URLs. This is required for
-  Ollama Cloud, which blocks direct calls from a browser.
+  site, forwards API calls to a fixed list of provider URLs, and saves each report
+  to `sessions/`.
 
 ### Publishing on GitHub Pages
 Settings → Pages → Deploy from branch → `main`, folder `/ (root)`. The site detects
-that `server.py` isn't running and calls Anthropic and OpenAI directly from the browser.
+that `server.py` isn't running and calls the provider directly from the browser.
